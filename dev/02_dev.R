@@ -15,12 +15,26 @@
 
 ## Dependencies ----
 ## Add one line by package you want to add as dependency
-usethis::use_package( "thinkr" )
+usethis::use_package( "dplyr" )
+usethis::use_package( "ggplot2" )
+usethis::use_package( "tidyr" )
+usethis::use_package( "gt" )
+usethis::use_package( "shiny" )
+usethis::use_package( "shinydashboard" )
+usethis::use_package( "shinyjs" )
+usethis::use_package( "lubridate" )
+usethis::use_package( "scales" )
+usethis::use_package( "cowplot" )
+usethis::use_package( "writexl" )
+usethis::use_package( "googlesheets4" )
+usethis::use_package( "readr" )
+usethis::use_package( "stringr" )
 
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module( name = "name_of_module1" ) # Name of the module
+golem::add_module( name = "sidebar_menu" ) # Name of the module
 golem::add_module( name = "name_of_module2" ) # Name of the module
+
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
@@ -40,6 +54,10 @@ usethis::use_data_raw( name = "my_dataset", open = FALSE )
 ## Tests ----
 ## Add one line by test you want to create
 usethis::use_test( "app" )
+usethis::use_r( "load_data" )
+usethis::use_r( "parse_data" )
+usethis::use_r( "export_data" )
+usethis::use_r( "display_data" )
 
 # Documentation
 

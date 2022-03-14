@@ -6,8 +6,30 @@ Description: Parses and QC checks ICP data
 License: MIT + file LICENSE
 Imports: 
     config (>= 0.3.1),
+    cowplot,
+    dplyr,
+    ggplot2,
     golem (>= 0.3.1),
-    shiny (>= 1.7.1)
+    googlesheets4,
+    gt,
+    lubridate,
+    processx,
+    readr,
+    scales,
+    shiny (>= 1.7.1),
+    shinydashboard,
+    shinyjs,
+    stringr,
+    tidyr,
+    writexl
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
+Suggests: 
+    rmarkdown,
+    knitr,
+    spelling,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Language: en-US
+VignetteBuilder: knitr
