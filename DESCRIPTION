@@ -1,0 +1,13 @@
+Package: SHLICPApp
+Title: ICP Data Parser
+Version: 0.0.0.9000
+Authors@R: person('Chris', 'Burgess', email = 'cjb0326@gmail.com', role = c('cre', 'aut'))
+Description: Parses and QC checks ICP data
+License: MIT + file LICENSE
+Imports: 
+    config (>= 0.3.1),
+    golem (>= 0.3.1),
+    shiny (>= 1.7.1)
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
