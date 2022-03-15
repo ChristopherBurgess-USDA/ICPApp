@@ -9,8 +9,10 @@ app_ui <- function(request) {
     # Leave this function for adding external resources
     golem_add_external_resources(),
     # Your application UI logic 
-    fluidPage(
-      h1("ICPApp")
+    dashboardPage( # Application title
+      dashboardHeader(title = "ICP Parser"),
+      dashboardSidebar(sidebarMenu(id = "tabs", sidebarMenuOutput("menu"))),
+      dashboardBody(useShinyjs(), uiOutput("tabs"))
     )
   )
 }
@@ -28,12 +30,12 @@ golem_add_external_resources <- function(){
   add_resource_path(
     'www', app_sys('app/www')
   )
- 
+  
   tags$head(
     favicon(),
     bundle_resources(
       path = app_sys('app/www'),
-      app_title = 'ICPApp'
+      app_title = 'SHLIPCApp'
     )
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert() 

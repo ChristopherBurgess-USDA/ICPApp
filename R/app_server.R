@@ -25,6 +25,13 @@ library(shiny)
 library(shinydashboard)
 library(shinyjs)
 
+options(
+  # whenever there is one account token found, use the cached token
+  gargle_oauth_email = TRUE,
+  # specify auth tokens should be stored in a hidden directory ".secrets"
+  gargle_oauth_cache = ".secrets"
+)
+
 app_server <- function( input, output, session ) {
   # Your application server logic 
   output$menu = renderMenu({
