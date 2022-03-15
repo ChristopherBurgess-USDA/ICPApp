@@ -5,7 +5,7 @@
 #' @import shiny
 #' @noRd
 
-library(DT)
+
 library(lubridate)
 library(stringr)
 library(readr)

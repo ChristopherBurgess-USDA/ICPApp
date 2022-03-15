@@ -13,6 +13,7 @@ Imports:
     googlesheets4,
     gt,
     lubridate,
+    pkgload,
     processx,
     readr,
     scales,

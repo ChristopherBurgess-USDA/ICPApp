@@ -9,3 +9,5 @@ $run_dev.*
 ^doc$
 ^Meta$
 ^\.secrets$
+^app\.R$
+^rsconnect$
