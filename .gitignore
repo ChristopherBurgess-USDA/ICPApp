@@ -8,3 +8,4 @@ inst/doc
 /Meta/
 .secerts/
 .secrets
+rsconnect/*
