@@ -18,10 +18,7 @@ check_std = function(target_ele, input_data, std_data){
     mutate(data = list(std_lookup(std_data, target_ele, std_type, data))) %>%
     unnest(data) %>%
     select(
-      SampleID, date_time,
-      `STD Type` = std_type,
-      Value = value,
-      `QC Check` = qc_check
+      SampleID, date_time, std_type, Value = value, `QC Check` = qc_check
     )%>%
     return()
 }

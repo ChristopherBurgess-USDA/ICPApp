@@ -26,9 +26,9 @@ usethis::use_package( "lubridate" )
 usethis::use_package( "scales" )
 usethis::use_package( "cowplot" )
 usethis::use_package( "writexl" )
-usethis::use_package( "googlesheets4" )
 usethis::use_package( "readr" )
 usethis::use_package( "stringr" )
+usethis::use_package( "readxl" )
 
 ## Add modules ----
 ## Create a module infrastructure in R/

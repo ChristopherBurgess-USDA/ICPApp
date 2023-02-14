@@ -8,7 +8,7 @@ std_table_create = function(tab_data){
       SampleID = paste0(SampleID, " (", hour, ":", min, ")"),
       Value = as.character(Value)
     ) %>%
-    select(-date_time, -`STD Type`, -hour, -min) %>%
+    select(-date_time, -std_type, -hour, -min) %>%
     pivot_longer(
       -one_of(c("element", "SampleID")),
       names_to = "measure",
@@ -40,24 +40,27 @@ std_table_create = function(tab_data){
     return()
 }
 
-
-std_graph_format = function(g_data, tar_ele, std_data){
-  
-  g_data %>%
-    select(element, std_data) %>%
-    unnest(std_data) %>%
-    mutate(Date = lubridate::date(date_time)) %>%
-    select(element, std_type = "STD Type", Date, value = Value) %>%
-    bind_rows(std_data) %>%
-    filter(element == tar_ele)%>%
-    ggplot(aes(x = Date, y = value)) +
-    geom_point(size = 2.5) +
-    theme_cowplot(12) +
-    facet_wrap(~std_data) %>%
+std_graph_format = function(std_data, h_lines, tar_ele,  date_range, icp_method, method_std){
+  ## The function graphs takes the filtered data and a y variable to plot
+  ## Paramters: data (tibble) and y variable (string)
+  ## Returns: ggplot
+  low_line <- filter(h_lines, element == tar_ele) %>% pull(warn_low)
+  high_line <- filter(h_lines, element == tar_ele) %>% pull(warn_high)
+  std_data %>%
+    select(-std_type) %>%
+    pivot_longer(-date_time, names_to = "element", values_to = "value") %>%
+    filter(element == tar_ele) %>%
+    ggplot(aes(x = date_time, y = value)) +
+    geom_point(size = 3) +
+    geom_hline(aes(yintercept = low_line)) +
+    geom_hline(aes(yintercept = high_line)) +
+    theme_cowplot(16) +
+    xlim(c(date_range[1], date_range[2])) +
     labs(
-      y = paste0(tar_ele, " (ppm)"),
-      title = paste0("Lab Standards for ", tar_ele)
-    ) %>%
+      x = "Time", y = tar_ele, title = icp_method, subtitle = method_std
+    ) +
+    panel_border() +
+    background_grid() %>%
     return()
 }
 
@@ -65,9 +68,6 @@ sam_graph_format = function(g_data, tar_ele){
   ## The function graphs takes the filtered data and a y variable to plot
   ## Paramters: data (tibble) and y variable (string)
   ## Returns: ggplot
-  b_val = g_data %>%
-    filter(element == tar_ele) %>%
-    pull(blank)
   g_data %>%
     select(element, data) %>%
     filter(element == tar_ele) %>%
@@ -78,11 +78,10 @@ sam_graph_format = function(g_data, tar_ele){
       breaks = c("Normal", "Over Cal", "Under Cal"),
       values = c("black", "#D23105FF", "#466BE3FF")
     ) +
-    geom_hline(yintercept = b_val) +
     theme_cowplot(12) +
     labs(
       x = "Time",
-      y = paste0(tar_ele, " (ppm)"),
+      y = tar_ele,
       title = paste0("Samples for ", tar_ele, " with blank value line"),
     ) %>%
     return()

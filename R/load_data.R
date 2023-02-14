@@ -1,4 +1,4 @@
-ipc_load = function(data_path){
+icp_load = function(data_path){
   
   temp_data = tryCatch(
     read_csv(data_path, skip = 2, skip_empty_rows = T) %>%
@@ -59,15 +59,3 @@ ipc_load = function(data_path){
 
 
 
-read_google_std = function(method){
-  read_sheet(
-    "1ON6vDrDc8fmQKMlF--SCl_sA1OCeU5V81YDtvyp8Xc8",
-    sheet = method
-  ) %>%
-    rename(std_type = `STD Type`) %>%
-    pivot_longer(
-      -c(Date, std_type),
-      names_to = "element", values_to = "value"
-    ) %>%
-    return()
-}

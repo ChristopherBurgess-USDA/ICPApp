@@ -11,8 +11,8 @@ library(stringr)
 library(readr)
 library(dplyr)
 library(tidyr)
+library(readxl)
 
-library(googlesheets4)
 library(writexl)
 
 library(gt)
@@ -25,12 +25,6 @@ library(shiny)
 library(shinydashboard)
 library(shinyjs)
 
-options(
-  # whenever there is one account token found, use the cached token
-  gargle_oauth_email = TRUE,
-  # specify auth tokens should be stored in a hidden directory ".secrets"
-  gargle_oauth_cache = ".secrets"
-)
 
 app_server <- function( input, output, session ) {
   # Your application server logic 
@@ -53,13 +47,26 @@ app_server <- function( input, output, session ) {
               "Mehlich" = "Mehlich",
               "Ammonium acetate" = "AmmAc",
               "Dry Ash" = "Dry Ash",
-              "DTPA" = "DTPA"
+              "DTPA" = "DTPA",
+              "MWD" = "MWD"
             ),
             selected = ""
           ),
+          selectInput(
+            label = h4("Choose Standard"), inputId = "std_type",
+            choices = list(" " = ""),
+            selected = ""
+          ),
+          fileInput(
+            inputId = "upload_std",
+            label = h4("Upload Standards"),
+            multiple = F,
+            placeholder = "Browse",
+            accept = c(".xlsx")
+          ),
           fileInput(
             inputId = "upload",
-            label = h4("Upload"),
+            label = h4("Upload ICP Data"),
             multiple = F,
             placeholder = "Browse",
             accept = c(".csv")
@@ -77,43 +84,69 @@ app_server <- function( input, output, session ) {
         ),
       ),
       tabItem(
-        tabName = "std_qc", h3("Quality Check of Standards"),
-        box(width=12, gt_output(outputId = "std_tab")),
-        uiOutput("g_update")
+        tabName = "std_qc", h3("Control Plots"),
+        div(style = "margin: auto; width: 80%", uiOutput("date_slider")),
+        selectInput(
+          label = h3("Control Plots by Element"), inputId = "std_element",
+          choices = NULL, selected = NULL
+        ),
+          plotOutput(outputId = "std_graph", width = "90%")
       ),
       tabItem(
         tabName = "explore",
-        selectInput(
-          label = h3("Data Exploration by Element"), inputId = "element",
-          choices = NULL, selected = NULL
-        ),
-        box(plotOutput(outputId = "std_graph", width = "90%")),
-        box(plotOutput(outputId = "sam_graph", click = "sam_click", width = "90%"),
-            verbatimTextOutput(outputId = "sam_info"))
+        box(gt_output(outputId = "std_tab")),
+        box(
+          selectInput(
+            label = h3("Data Exploration by Element"), inputId = "element",
+            choices = NULL, selected = NULL
+          ),
+          plotOutput(outputId = "sam_graph", click = "sam_click", width = "90%"),
+          verbatimTextOutput(outputId = "sam_info")
+        )
       ),
       tabItem(
         tabName = "download", h3("Download Data"),
         box(
-          helpText("Download data as excel file."),
-          downloadButton(outputId = "download", label = "Download")
+          downloadButton(outputId = "download", label = "Download Data")
+        ),
+        box(
+          downloadButton(outputId = "download_std", label = "Download Updated Standards")
         )
       )
     )
   })
-  output$g_update = renderUI({
-    box(
-      width=12,
-      h3("Would you like to add this data to Standard tracking?"),
-      actionButton(
-        inputId = "update_click",
-        "Update"
-      ),
-      align = "center"
+
+
+  observeEvent(input$method, {
+    vals <- switch(
+      input$method,
+      "Mehlich" = c("CAL"),
+      "AmmAc" = c("CAL"),
+      "Dry Ash" = c("CTFS"),
+      "DTPA" = c("CAL"),
+      "MWD" = c("CAL", "CTFS")
+    )
+
+    updateSelectInput(
+      session = session,
+      inputId = "std_type",
+      choices = vals,
+      selected = vals[1]
     )
   })
+
+  import_std_data = eventReactive(input$upload_std, {
+    read_excel(input$upload_std$datapath)
+  })
   
-  std_data = eventReactive(input$method, {
-    read_google_std(input$method) %>%
+  std_data = reactive({
+    req(import_std_data(), input$std_type)
+    import_std_data() %>%
+      filter(std_type == input$std_type) %>%
+      pivot_longer(
+        -c(date_time, std_type),
+        names_to = "element", values_to = "value"
+      ) %>%
       return()
   })
   
@@ -140,7 +173,7 @@ app_server <- function( input, output, session ) {
       ext %in% c("csv"),
       "Please upload raw ICP comma-delimateted (csv)"
     ))
-    ipc_load(input$upload$datapath) 
+    icp_load(input$upload$datapath) 
   })
   
   data = reactive({
@@ -149,15 +182,41 @@ app_server <- function( input, output, session ) {
   })
   
   
-  observeEvent(input$update_click, {
-    upload_google(data(), input$method)
-    toggle("g_update")
+  updated_std <- reactive({
+    req(data())
+    temp <- data() %>%
+      select(element, std_data) %>%
+      unnest(std_data) %>%
+      select(date_time, std_type, element, Value) %>%
+      pivot_wider(names_from = element, values_from = Value)
+    
+    bind_rows(import_std_data(), temp) 
   })
   
   observe({
-    ## The observe is like ta reactive accept it doesn't return anything
-    ## Since we do not know how many or which files the user will be uploading the observe
-    ## is constantly updating the multiple choice list with the name of the files.
+    req(input$method, input$upload, input$upload_std)
+    output$menu = renderMenu({
+      sidebarMenu(
+        menuItem("Upload", tabName = "upload", icon = icon("upload")),
+        menuItem("Download", tabName = "download", icon = icon("download")),
+        menuItem("Control Plots", tabName = "std_qc", icon = icon("chart-line")),
+        menuItem("Data QC", icon = icon("heartbeat"), tabName = "explore")
+      )
+    })
+  })
+  
+  output$date_slider <- renderUI({
+    req(updated_std())
+    dates <- updated_std()$date_time
+    sliderInput(
+      "date_range", label = h4("Select Date Range to Plot"),
+      min = min(dates), max = max(dates),
+      value = c(min(dates), max(dates)), width = "100%"
+    )
+  })
+  
+  observe({
+    req(data())
     ele_list = data()$element
     updateSelectInput(
       session,
@@ -165,15 +224,17 @@ app_server <- function( input, output, session ) {
       choices = ele_list,
       selected = NULL
     )
-    output$menu = renderMenu({
-      sidebarMenu(
-        menuItem("Upload", tabName = "upload", icon = icon("upload")),
-        menuItem("Download", tabName = "download", icon = icon("download")),
-        menuItem("Standard QC", tabName = "std_qc", icon = icon("heartbeat")),
-        menuItem("Data Explore", icon = icon("search"), tabName = "explore")
-      )
-    })
-    
+  })
+  
+  observe({
+    req(data())
+    ele_list = data()$element
+    updateSelectInput(
+      session,
+      inputId = "std_element",
+      choices = ele_list,
+      selected = NULL
+    )
   })
   
   sam_data= eventReactive(
@@ -186,23 +247,42 @@ app_server <- function( input, output, session ) {
         nearPoints(input$sam_click, xvar = "date_time", yvar = "value")
     }
   )
-  observeEvent(input$element, {
-    output$std_graph = renderPlot({std_graph_format(data(), input$element, std_data())})
-    output$sam_graph = renderPlot({sam_graph_format(data(), input$element)})
-    output$sam_info = renderPrint({
-      sam_data() %>%
-        print.data.frame()
+  observeEvent(input$std_element, {
+    req(updated_std())
+    output$std_graph = renderPlot({
+      std_graph_format(
+        updated_std(), std_cutoff(),
+        input$std_element, input$date_range, input$method, input$std_type
+      )
     })
-    
+  })
+  
+  observeEvent(input$element, {
+    output$sam_graph = renderPlot({sam_graph_format(data(), input$element)})
   })
   
   output$std_tab = render_gt(std_table_create(data()))
   
   # Allows the user to download data.
+
   output$download = downloadHandler(
-    filename = "parsed_icp_data.xlsx",
+    filename = paste0(
+      format(Sys.Date(), "%Y%m%d"),
+      "_parsed_ICP_", input$method, "_data.xlsx"
+    ),
     content = function(file){
       download_data(data()) %>%
+        write_xlsx(file)
+    }
+  )
+  
+  output$download_std = downloadHandler(
+    filename = paste0(
+      format(Sys.Date(), "%Y%m%d"),
+      "_ICP_STD_", input$method, "_",  input$std_type, ".xlsx"
+    ),
+    content = function(file){
+      updated_std() %>%
         write_xlsx(file)
     }
   )
